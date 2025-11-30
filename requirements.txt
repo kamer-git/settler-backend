@@ -1,0 +1,7 @@
+FastAPI
+uvicorn
+supabase
+python-dotenv
+pydantic
+email-validator
+gotrue
