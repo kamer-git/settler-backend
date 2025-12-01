@@ -8,10 +8,15 @@ class User(BaseModel):
 class UserInDB(User):
     hashed_password: str
 
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
+class UserCreate(User):
+    pass
 
-class UserLogin(BaseModel):
+class UserLogin(User):
+    pass
+
+class PasswordResetRequest(BaseModel):
     email: EmailStr
+
+class PasswordUpdateRequest(BaseModel):
+    token: str
     password: str

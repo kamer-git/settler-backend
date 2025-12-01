@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from ..services.supabase_client import get_supabase_client
-from ..schemas.user import UserCreate, UserLogin
+from ..schemas.user import UserCreate, UserLogin, PasswordResetRequest, PasswordUpdateRequest
 from gotrue.errors import AuthApiError
 from supabase import Client
 
@@ -51,6 +51,29 @@ def login(user: UserLogin, supabase: Client = Depends(get_supabase_client)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=e.message or "Invalid credentials"
         )
+
+@router.post("/request-password-reset")
+def request_password_reset(req: PasswordResetRequest, supabase: Client = Depends(get_supabase_client)):
+    try:
+        supabase.auth.reset_password_for_email(email=req.email)
+        return {"message": "Password reset email sent."}
+    except AuthApiError as e:
+        # Avoid leaking information about whether an email exists
+        return {"message": "If an account with this email exists, a password reset email has been sent."}
+
+
+@router.post("/update-password")
+def update_password(req: PasswordUpdateRequest, supabase: Client = Depends(get_supabase_client)):
+    try:
+        # Supabase uses the token from the password reset email to authenticate the user for this single action.
+        user_response = supabase.auth.update_user(
+            {"password": req.password}, 
+            jwt=req.token
+        )
+        return {"message": "Password updated successfully."}
+    except AuthApiError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message)
+
 
 @router.get("/verify")
 def verify(token: str, supabase: Client = Depends(get_supabase_client)):
